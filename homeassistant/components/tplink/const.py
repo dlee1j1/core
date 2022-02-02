@@ -1,6 +1,7 @@
 """Const for TP-Link."""
 from __future__ import annotations
 
+import datetime
 from typing import Final
 
 from homeassistant.const import Platform
@@ -19,4 +20,11 @@ CONF_STRIP: Final = "strip"
 CONF_SWITCH: Final = "switch"
 CONF_SENSOR: Final = "sensor"
 
-PLATFORMS: Final = [Platform.LIGHT, Platform.SENSOR, Platform.SWITCH]
+MIN_TIME_BETWEEN_DISCOVERS = datetime.timedelta(seconds=1)
+
+PLATFORMS: Final = [
+    Platform.LIGHT,
+    Platform.SENSOR,
+    Platform.SWITCH,
+    Platform.BINARY_SENSOR,
+]
