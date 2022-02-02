@@ -1,0 +1,14 @@
+Notes
+Code:
+1. Need to revert two commits
+2. Need to enable --runner in main.py and ignore it
+3. Fix util/file.py to use chmod instead of fchmod
+
+Env set up
+3. set up venv
+4. python -m pip install wheel --constraint homeassistant/package_constraints.txt
+5. python -m pip install -e . --constraint homeassistant/package_constraints.txt
+6. install tzlocal (i.e., pip install tzlocal)
+
+
+

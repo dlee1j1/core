@@ -109,7 +109,7 @@ def get_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--script", nargs=argparse.REMAINDER, help="Run one of the embedded scripts"
     )
-
+    parser.add_argument("--runner", help="Ignored", action="store_true")
     arguments = parser.parse_args()
 
     return arguments
