@@ -18,6 +18,7 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN, MIN_TIME_BETWEEN_DISCOVERS
+from .entity import CoordinatedTPLinkEntity
 
 ATTR_CONFIG = "config"
 CONF_AGGRESSIVE = "aggressive-update-via-udp-broadcast"
@@ -102,6 +103,7 @@ class TPLinkUpdater(BinarySensorEntity):
 
     def schedule_discovery(self) -> None:
         """Ask HASS to schedule a single discovery call."""
+        _LOGGER.debug("Creating a discovery call")
         self.hass.async_create_task(
             Discover.discover(
                 target=self._broadcast_domain,
@@ -121,11 +123,11 @@ class TPLinkUpdater(BinarySensorEntity):
     async def update_from_discovery(self, device: SmartDevice) -> None:
         """Tell entities that their devices got an update."""
         self._last_updated = datetime.now()
-        hass_data: dict[str, Entity] = self.hass.data[DOMAIN]
-        entity: Entity | None = hass_data.get(device.device_id)
+        entity: Entity | None = CoordinatedTPLinkEntity.get_entity(device.device_id)
         if entity is None:
             # we can kick off the create entity from here
             return
+        _LOGGER.debug("Updating entity %s", entity.name)
         entity.async_write_ha_state()
         if device.is_strip:
             for plug in device.children:

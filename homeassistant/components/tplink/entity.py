@@ -43,6 +43,7 @@ class CoordinatedTPLinkEntity(CoordinatorEntity):
         self.device: SmartDevice = device
         self._attr_name = self.device.alias
         self._attr_unique_id = self.device.device_id
+        self._register()
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -60,3 +61,14 @@ class CoordinatedTPLinkEntity(CoordinatorEntity):
     def is_on(self) -> bool:
         """Return true if switch is on."""
         return bool(self.device.is_on)
+
+    # Index of entities by device_id
+    _entities: dict[str, CoordinatedTPLinkEntity] = {}
+
+    @classmethod
+    def get_entity(cls, device_id: str) -> CoordinatedTPLinkEntity | None:
+        """Get the entity that has this device ID."""
+        return cls._entities.get(device_id)
+
+    def _register(self) -> None:
+        self._entities[self.device.device_id] = self
