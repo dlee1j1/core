@@ -16,10 +16,11 @@ from homeassistant.const import (
     CONF_MAC,
     CONF_NAME,
     EVENT_HOMEASSISTANT_STARTED,
+    Platform,
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import device_registry as dr, discovery
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.typing import ConfigType
 
@@ -73,6 +74,10 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _async_discovery)
     async_track_time_interval(hass, _async_discovery, DISCOVERY_INTERVAL)
+
+    hass.async_create_task(
+        discovery.async_load_platform(hass, Platform.BINARY_SENSOR, DOMAIN, {}, config)
+    )
 
     return True
 

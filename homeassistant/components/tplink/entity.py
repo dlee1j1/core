@@ -70,5 +70,10 @@ class CoordinatedTPLinkEntity(CoordinatorEntity):
         """Get the entity that has this device ID."""
         return cls._entities.get(device_id)
 
+    @classmethod
+    def has_any_entity(cls) -> bool:
+        """Tells whether there are any tplink entities."""
+        return len(cls._entities) > 0
+
     def _register(self) -> None:
         self._entities[self.device.device_id] = self

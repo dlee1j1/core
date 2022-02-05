@@ -10,12 +10,12 @@ from kasa import Discover, SmartDevice
 import voluptuous as vol
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from .const import DOMAIN, MIN_TIME_BETWEEN_DISCOVERS
 from .entity import CoordinatedTPLinkEntity
@@ -42,13 +42,17 @@ CONFIG_SCHEMA = vol.Schema(
 SCAN_INTERVAL = MIN_TIME_BETWEEN_DISCOVERS
 
 
-async def async_setup_entry(
+async def async_setup_platform(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config: ConfigType,
     async_add_entities: AddEntitiesCallback,
+    discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
     """Set up the UDP poller."""
-    config_data = hass.data[DOMAIN].get(ATTR_CONFIG)
+    _LOGGER.info("Updater Binary Sensor Platform setup called")
+    data: dict[str, Any] = hass.data[DOMAIN]
+
+    config_data = data.get(ATTR_CONFIG)
     broadcast_domain = "255.255.255.255"
     if config_data is not None:
         be_aggressive = config_data.get(CONF_AGGRESSIVE)
@@ -60,23 +64,22 @@ async def async_setup_entry(
 
     async def _async_kick_off(*_: Any) -> None:
         # add the updater
-        hass.data[DOMAIN][CONF_DISCOVERY_BROADCAST_DOMAIN] = broadcast_domain
+        data[CONF_DISCOVERY_BROADCAST_DOMAIN] = broadcast_domain
         updater: Entity = TPLinkUpdater(broadcast_domain)
         async_add_entities([updater])
-        hass.data[DOMAIN]["updater"] = updater
+
+    #       data[DOMAIN]["updater"] = updater
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _async_kick_off)
-    return
 
 
 class TPLinkUpdater(BinarySensorEntity):
-    """Update TPLimk SmartBulb and SmartSwitches entities using the Kasa discovery protocol."""
+    """Update TPLink SmartBulb and SmartSwitches entities using the Kasa discovery protocol."""
 
     def __init__(self, broadcast_domain: str) -> None:
         """Initialize me."""
         self._broadcast_domain = broadcast_domain
         self._last_updated = datetime.min
-        self._start_time = datetime.now()
 
     @property
     def name(self) -> str:
@@ -113,11 +116,8 @@ class TPLinkUpdater(BinarySensorEntity):
         )
 
     async def async_update(self) -> None:
-        """Kicks off another set of discoveries if it's been a while. Otherwise, it waits for the next tick."""
-        time = datetime.now()
-
-        # kick off the discovery cycle but we wait for the devices to have gone silent for a while
-        if time - self._last_updated > MIN_TIME_BETWEEN_DISCOVERS:
+        """Kicks off another set of discoveries."""
+        if CoordinatedTPLinkEntity.has_any_entity():
             self.schedule_discovery()
 
     async def update_from_discovery(self, device: SmartDevice) -> None:
@@ -127,7 +127,7 @@ class TPLinkUpdater(BinarySensorEntity):
         if entity is None:
             # we can kick off the create entity from here
             return
-        _LOGGER.debug("Updating entity %s", entity.name)
+        _LOGGER.info("Updating entity %s", entity.name)
         entity.async_write_ha_state()
         if device.is_strip:
             for plug in device.children:
