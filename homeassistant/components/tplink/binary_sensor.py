@@ -73,6 +73,28 @@ async def async_setup_platform(
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _async_kick_off)
 
 
+class TPLinkSwitchEntityRegistry:
+    """Registry of TPLinkSwitches indexed by deviceId."""
+
+    # Index of switch entities by device_id
+    _entities: dict[str, CoordinatedTPLinkEntity] = {}
+
+    @classmethod
+    def get_entity(cls, device_id: str) -> CoordinatedTPLinkEntity | None:
+        """Get the entity that has this device ID."""
+        return cls._entities.get(device_id)
+
+    @classmethod
+    def has_any_entity(cls) -> bool:
+        """Tells whether there are any tplink entities."""
+        return len(cls._entities) > 0
+
+    @classmethod
+    def register(cls, entity: CoordinatedTPLinkEntity) -> None:
+        """Register entity by device ID."""
+        cls._entities[entity.device.device_id] = entity
+
+
 class TPLinkUpdater(BinarySensorEntity):
     """Update TPLink SmartBulb and SmartSwitches entities using the Kasa discovery protocol."""
 
@@ -117,13 +139,13 @@ class TPLinkUpdater(BinarySensorEntity):
 
     async def async_update(self) -> None:
         """Kicks off another set of discoveries."""
-        if CoordinatedTPLinkEntity.has_any_entity():
+        if TPLinkSwitchEntityRegistry.has_any_entity():
             self.schedule_discovery()
 
     async def update_from_discovery(self, device: SmartDevice) -> None:
         """Tell entities that their devices got an update."""
         self._last_updated = datetime.now()
-        entity: Entity | None = CoordinatedTPLinkEntity.get_entity(device.device_id)
+        entity: Entity | None = TPLinkSwitchEntityRegistry.get_entity(device.device_id)
         if entity is None:
             # we can kick off the create entity from here
             return
@@ -131,4 +153,4 @@ class TPLinkUpdater(BinarySensorEntity):
         entity.async_write_ha_state()
         if device.is_strip:
             for plug in device.children:
-                self.update_from_discovery(plug)
+                await self.update_from_discovery(plug)

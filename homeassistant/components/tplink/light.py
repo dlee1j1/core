@@ -27,6 +27,7 @@ from homeassistant.util.color import (
 )
 
 from . import legacy_device_id
+from .binary_sensor import TPLinkSwitchEntityRegistry
 from .const import DOMAIN
 from .coordinator import TPLinkDataUpdateCoordinator
 from .entity import CoordinatedTPLinkEntity, async_refresh_after
@@ -65,6 +66,7 @@ class TPLinkSmartBulb(CoordinatedTPLinkEntity, LightEntity):
             # created them as lights
             # https://github.com/home-assistant/core/blob/2021.9.7/homeassistant/components/tplink/common.py#L86
             self._attr_unique_id = legacy_device_id(device)
+            TPLinkSwitchEntityRegistry.register(self)
         else:
             self._attr_unique_id = self.device.mac.replace(":", "").upper()
 
